@@ -1,20 +1,19 @@
-"""Core detection logic (PRD FR-3), shared by both transports:
-main.py (gRPC server, V1) and kafka_worker.py (Redpanda consumer, V2).
-Wraps valve_stiction_ml's classic detector and trained RF model directly --
-not a reimplementation or a copy, the same modules/artifact valve-stiction-ml
+"""Core detection logic (PRD FR-3), shared by both delivery adapters:
+delivery/grpc/server.py (V1) and delivery/kafka/worker.py (V2). Wraps
+valve_stiction_ml's classic detector and trained RF model directly -- not
+a reimplementation or a copy, the same modules/artifact valve-stiction-ml
 trains and produces. See docs/V1_PLAN.md, docs/V2_PLAN.md, docs/V3_PLAN.md.
 
 DetectionCore is a pure predictor: WindowInput in, DetectionResult out, no
-DB access. Persistence is each transport's own concern (V3_PLAN.md) -- the
-gRPC transport hands the result back to the Go caller, which persists it;
-the Kafka transport has no downstream consumer to do that, so
-kafka_worker.py persists it directly after calling detect().
+DB access. Persistence is each delivery adapter's own concern -- the gRPC
+adapter hands the result back to the Go caller, which persists it; the
+Kafka adapter has no downstream consumer to do that, so
+delivery/kafka/worker.py calls repository/persist.py directly.
 """
 
 from __future__ import annotations
 
 import threading
-from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -24,6 +23,8 @@ from valve_stiction_ml.classic import (
     kano_pattern_check,
 )
 from valve_stiction_ml.inference import load_artifact, predict_window
+
+from domain.types import DetectionResult, WindowInput
 
 # Matches valve-stiction-ml/configs/default.yaml's classic_detector.ellipse_stiction_threshold
 # -- tuned on ISDB only, see that repo's ML_PLAN.md §7 for how and why.
@@ -40,7 +41,7 @@ MIN_RELATIVE_ACTIVITY = 0.15  # matches valve-stiction-ml's default
 EMA_ALPHA = 0.2
 MIN_WINDOWS_BEFORE_GUARD = 5
 
-DEFAULT_RF_MODEL_PATH = Path(__file__).parent / "model" / "model.joblib"
+DEFAULT_RF_MODEL_PATH = Path(__file__).parent.parent / "model" / "model.joblib"
 
 
 class RollingActivityReference:
@@ -79,29 +80,11 @@ def derive_label(ellipse_verdict: bool, kano_verdict: bool) -> str:
     return "uncertain"
 
 
-@dataclass(frozen=True)
-class WindowInput:
-    sensor_id: str
-    pv: list[float]
-    op: list[float]
-    window_start_unix_ms: int
-
-
-@dataclass(frozen=True)
-class DetectionResult:
-    label: str
-    ellipse_index: float
-    kano_verdict: bool
-    has_activity: bool
-    rf_label: str
-    rf_probability: float
-
-
 class DetectionCore:
     """Transport-agnostic: takes a WindowInput, returns a DetectionResult.
-    Both main.py and kafka_worker.py just adapt their transport's message
-    shape into a WindowInput and call detect() -- persistence is up to
-    each transport, see module docstring."""
+    Both delivery adapters just translate their transport's message shape
+    into a WindowInput and call detect() -- persistence is up to each
+    adapter, see module docstring."""
 
     def __init__(self, rf_model_path: Path = DEFAULT_RF_MODEL_PATH):
         self.activity_ref = RollingActivityReference()

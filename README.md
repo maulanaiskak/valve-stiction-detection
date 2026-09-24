@@ -1,20 +1,28 @@
 # valve-stiction-detection
 
-Detection/ML service for the valve stiction fault-detection pipeline. Stateless predictor: given a windowed PV/OP sample, runs [valve-stiction-ml](https://github.com/maulanaiskak/valve-stiction-ml)'s classic detector (ellipse-fit + Kano pattern check) and its trained RF model, and returns both results. No database access — the caller (ingestion, or `kafka_worker.py` itself) persists.
+Detection/ML service for the valve stiction fault-detection pipeline. Stateless predictor: given a windowed PV/OP sample, runs [valve-stiction-ml](https://github.com/maulanaiskak/valve-stiction-ml)'s classic detector (ellipse-fit + Kano pattern check) and its trained RF model, and returns both results. No database access — the caller (ingestion, or the Kafka delivery adapter itself) persists.
 
-Two transports, same core:
+## Architecture
 
-- `main.py` — gRPC server (`detector.proto`'s `Detection` service). Used by [valve-stiction-ingestion](https://github.com/maulanaiskak/valve-stiction-ingestion) in its default mode.
-- `kafka_worker.py` — Kafka/Redpanda consumer, for horizontal scaling (multiple replicas in one consumer group, partitioned by `sensor_id`). Persists to TimescaleDB itself, since there's no downstream consumer waiting on a response in this mode.
+Layered: `domain` (plain types, no I/O) → `usecase` (the actual detection logic, transport-agnostic) → `repository` (TimescaleDB persistence) → `delivery` (transport adapters). Two delivery adapters share the same `usecase.DetectionCore`:
 
-`detector.py` holds the shared logic; `persist.py` is only used by `kafka_worker.py`.
+- `delivery/grpc/server.py` — gRPC server (`proto/detection.proto`'s `Detection` service). Used by [valve-stiction-ingestion](https://github.com/maulanaiskak/valve-stiction-ingestion) in its default mode.
+- `delivery/kafka/worker.py` — Kafka/Redpanda consumer, for horizontal scaling (multiple replicas in one consumer group, partitioned by `sensor_id`). Calls `repository.persist` itself, since there's no downstream consumer waiting on a response in this mode.
+
+```
+domain/types.py          WindowInput, DetectionResult -- plain data
+usecase/detector.py       DetectionCore -- classic detector + RF, transport-agnostic
+repository/persist.py     TimescaleDB writes (Kafka adapter only)
+delivery/grpc/server.py   gRPC adapter
+delivery/kafka/worker.py  Kafka adapter
+```
 
 ## Run
 
 ```bash
 docker build -t valve-stiction-detection .
-docker run -p 50051:50051 valve-stiction-detection            # gRPC mode
-docker run -e KAFKA_BROKERS=... valve-stiction-detection python kafka_worker.py   # Kafka mode
+docker run -p 50051:50051 valve-stiction-detection                                             # gRPC mode
+docker run -e KAFKA_BROKERS=... valve-stiction-detection python -m delivery.kafka.worker        # Kafka mode
 ```
 
 | Env var | Used by | Default |

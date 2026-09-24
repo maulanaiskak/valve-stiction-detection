@@ -1,7 +1,8 @@
-"""Detection/ML service (PRD FR-3), gRPC transport (V1). Thin adapter over
-detector.py's DetectionCore -- see that module for the actual logic. Stateless
-predictor: no DB access (see docs/V3_PLAN.md) -- the Go ingestion service
-persists the result after this call returns.
+"""Detection/ML service (PRD FR-3), gRPC delivery adapter (V1). Thin
+translation layer over usecase/detector.py's DetectionCore -- see that
+module for the actual logic. Stateless predictor: no DB access (see
+docs/V3_PLAN.md) -- the Go ingestion service persists the result after
+this call returns.
 """
 
 from __future__ import annotations
@@ -11,8 +12,9 @@ from concurrent import futures
 
 import grpc
 
-from detector import DetectionCore, WindowInput
-from detectionpb import detection_pb2, detection_pb2_grpc
+from delivery.grpc.detectionpb import detection_pb2, detection_pb2_grpc
+from domain.types import WindowInput
+from usecase.detector import DetectionCore
 
 
 class DetectionServicer(detection_pb2_grpc.DetectionServicer):

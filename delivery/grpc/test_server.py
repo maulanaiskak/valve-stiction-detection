@@ -1,13 +1,13 @@
-"""Thin test of the gRPC adapter layer -- the actual detection logic is
-tested in test_detector.py against DetectionCore directly. This just
-checks main.py correctly translates a gRPC request into a WindowInput
-and a DetectionResult back into a gRPC response.
+"""Thin test of the gRPC delivery adapter -- the actual detection logic is
+tested in usecase/test_detector.py against DetectionCore directly. This
+just checks server.py correctly translates a gRPC request into a
+WindowInput and a DetectionResult back into a gRPC response.
 """
 
 from unittest.mock import MagicMock, patch
 
-from detector import DetectionResult
-from main import DetectionServicer
+from delivery.grpc.server import DetectionServicer
+from domain.types import DetectionResult
 
 
 def make_servicer():

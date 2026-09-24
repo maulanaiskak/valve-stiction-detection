@@ -1,6 +1,6 @@
-"""Tests for kafka_worker.py's message parsing. The JSON shape here must
-match ingestion/main.go's WindowMessage struct field-for-field -- these
-tests fix that contract from the Python side; there's no shared schema
+"""Tests for worker.py's message parsing. The JSON shape here must match
+ingestion/main.go's WindowMessage struct field-for-field -- these tests
+fix that contract from the Python side; there's no shared schema
 enforcing it (see docs/V2_PLAN.md on why JSON was chosen over a second
 protobuf path).
 """
@@ -8,7 +8,7 @@ protobuf path).
 import json
 
 import pytest
-from kafka_worker import parse_window_message
+from delivery.kafka.worker import parse_window_message
 
 
 def test_parses_a_valid_window_message():

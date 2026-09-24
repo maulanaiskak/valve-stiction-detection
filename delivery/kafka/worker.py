@@ -1,6 +1,7 @@
-"""Detection service (PRD FR-9), Kafka/Redpanda transport (V2). Thin
-adapter over detector.py's DetectionCore -- see that module for the actual
-logic, and docs/V2_PLAN.md for the shared-core rationale.
+"""Detection service (PRD FR-9), Kafka/Redpanda delivery adapter (V2).
+Thin translation layer over usecase/detector.py's DetectionCore -- see
+that module for the actual logic, and docs/V2_PLAN.md for the shared-core
+rationale.
 
 FR-9's "horizontally scalable, multiple instances in one consumer group"
 requirement isn't implemented here at all -- it's Kafka/Redpanda's own
@@ -17,8 +18,9 @@ import os
 import psycopg2
 from confluent_kafka import Consumer
 
-from detector import DetectionCore, WindowInput
-from persist import persist
+from domain.types import WindowInput
+from repository.persist import persist
+from usecase.detector import DetectionCore
 
 
 def parse_window_message(raw: bytes) -> WindowInput:

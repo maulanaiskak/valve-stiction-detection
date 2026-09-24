@@ -1,15 +1,14 @@
-"""Tests for detector.py's core logic, transport-agnostic. See main.py's
-and kafka_worker.py's own (thin) tests for transport-specific adapter
-behavior.
+"""Tests for usecase/detector.py's core logic, transport-agnostic. See the
+delivery adapters' own (thin) tests for transport-specific behavior.
 """
 
 import numpy as np
-from detector import (
+from domain.types import WindowInput
+from usecase.detector import (
     EMA_ALPHA,
     MIN_WINDOWS_BEFORE_GUARD,
     DetectionCore,
     RollingActivityReference,
-    WindowInput,
 )
 
 

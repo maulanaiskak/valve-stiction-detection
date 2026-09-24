@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
-from detector import DetectionResult, WindowInput
-from persist import persist
+from domain.types import DetectionResult, WindowInput
+from repository.persist import persist
 
 
 def test_persist_writes_one_row_and_commits():

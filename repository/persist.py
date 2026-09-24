@@ -1,12 +1,13 @@
-"""TimescaleDB persistence for detection results. Only kafka_worker.py (V2)
-uses this directly -- the gRPC transport (V1) hands its result back to the
-Go caller, which persists it itself (see docs/V3_PLAN.md and detector.py's
-module docstring for why DetectionCore itself stays pure).
+"""TimescaleDB persistence for detection results. Only
+delivery/kafka/worker.py (V2) uses this directly -- the gRPC delivery
+adapter (V1) hands its result back to the Go caller, which persists it
+itself (see docs/V3_PLAN.md and usecase/detector.py's module docstring
+for why DetectionCore itself stays pure).
 """
 
 from __future__ import annotations
 
-from detector import DetectionResult, WindowInput
+from domain.types import DetectionResult, WindowInput
 
 
 def persist(db_conn, window: WindowInput, result: DetectionResult) -> None:
