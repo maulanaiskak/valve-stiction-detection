@@ -18,6 +18,7 @@ import psycopg2
 from confluent_kafka import Consumer
 
 from detector import DetectionCore, WindowInput
+from persist import persist
 
 
 def parse_window_message(raw: bytes) -> WindowInput:
@@ -46,7 +47,8 @@ def consume() -> None:
     topic = os.environ.get("KAFKA_TOPIC", "valve-windows")
     group_id = os.environ.get("KAFKA_GROUP_ID", "detection-group")
 
-    core = DetectionCore(connect_db())
+    core = DetectionCore()
+    db_conn = connect_db()
     consumer = Consumer(
         {
             "bootstrap.servers": brokers,
@@ -73,10 +75,12 @@ def consume() -> None:
                 continue
 
             result = core.detect(window)
+            persist(db_conn, window, result)
             print(
                 f"[{window.sensor_id}] (partition {msg.partition()}) "
                 f"label={result.label} ellipse_index={result.ellipse_index:.3f} "
-                f"kano={result.kano_verdict} has_activity={result.has_activity}"
+                f"kano={result.kano_verdict} has_activity={result.has_activity} "
+                f"rf_label={result.rf_label} rf_probability={result.rf_probability:.3f}"
             )
     finally:
         consumer.close()

@@ -1,7 +1,7 @@
-"""Detection service (PRD FR-3), gRPC transport (V1). Thin adapter over
-detector.py's DetectionCore -- see that module for the actual logic, and
-docs/V2_PLAN.md for why this got split out (kafka_worker.py is the other
-transport, sharing the same core).
+"""Detection/ML service (PRD FR-3), gRPC transport (V1). Thin adapter over
+detector.py's DetectionCore -- see that module for the actual logic. Stateless
+predictor: no DB access (see docs/V3_PLAN.md) -- the Go ingestion service
+persists the result after this call returns.
 """
 
 from __future__ import annotations
@@ -10,15 +10,14 @@ import os
 from concurrent import futures
 
 import grpc
-import psycopg2
 
 from detector import DetectionCore, WindowInput
 from detectionpb import detection_pb2, detection_pb2_grpc
 
 
 class DetectionServicer(detection_pb2_grpc.DetectionServicer):
-    def __init__(self, db_conn):
-        self.core = DetectionCore(db_conn)
+    def __init__(self, core: DetectionCore):
+        self.core = core
 
     def DetectWindow(self, request, context):
         window = WindowInput(
@@ -33,26 +32,20 @@ class DetectionServicer(detection_pb2_grpc.DetectionServicer):
             ellipse_index=result.ellipse_index,
             kano_verdict=result.kano_verdict,
             has_activity=result.has_activity,
+            rf_label=result.rf_label,
+            rf_probability=result.rf_probability,
         )
-
-
-def connect_db():
-    dsn = os.environ.get(
-        "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/valve_stiction",
-    )
-    return psycopg2.connect(dsn)
 
 
 def serve() -> None:
     port = os.environ.get("DETECTION_SERVICE_PORT", "50051")
-    conn = connect_db()
+    core = DetectionCore()
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    detection_pb2_grpc.add_DetectionServicer_to_server(DetectionServicer(conn), server)
+    detection_pb2_grpc.add_DetectionServicer_to_server(DetectionServicer(core), server)
     server.add_insecure_port(f"[::]:{port}")
     server.start()
-    print(f"Detection service (gRPC) listening on :{port}")
+    print(f"Detection/ML service (gRPC) listening on :{port}")
     server.wait_for_termination()
 
 

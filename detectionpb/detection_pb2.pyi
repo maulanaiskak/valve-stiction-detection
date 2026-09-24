@@ -19,13 +19,17 @@ class WindowRequest(_message.Message):
     def __init__(self, sensor_id: _Optional[str] = ..., pv: _Optional[_Iterable[float]] = ..., op: _Optional[_Iterable[float]] = ..., window_start_unix_ms: _Optional[int] = ...) -> None: ...
 
 class WindowResponse(_message.Message):
-    __slots__ = ("label", "ellipse_index", "kano_verdict", "has_activity")
+    __slots__ = ("label", "ellipse_index", "kano_verdict", "has_activity", "rf_label", "rf_probability")
     LABEL_FIELD_NUMBER: _ClassVar[int]
     ELLIPSE_INDEX_FIELD_NUMBER: _ClassVar[int]
     KANO_VERDICT_FIELD_NUMBER: _ClassVar[int]
     HAS_ACTIVITY_FIELD_NUMBER: _ClassVar[int]
+    RF_LABEL_FIELD_NUMBER: _ClassVar[int]
+    RF_PROBABILITY_FIELD_NUMBER: _ClassVar[int]
     label: str
     ellipse_index: float
     kano_verdict: bool
     has_activity: bool
-    def __init__(self, label: _Optional[str] = ..., ellipse_index: _Optional[float] = ..., kano_verdict: _Optional[bool] = ..., has_activity: _Optional[bool] = ...) -> None: ...
+    rf_label: str
+    rf_probability: float
+    def __init__(self, label: _Optional[str] = ..., ellipse_index: _Optional[float] = ..., kano_verdict: _Optional[bool] = ..., has_activity: _Optional[bool] = ..., rf_label: _Optional[str] = ..., rf_probability: _Optional[float] = ...) -> None: ...

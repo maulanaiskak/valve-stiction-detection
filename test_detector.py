@@ -3,8 +3,6 @@ and kafka_worker.py's own (thin) tests for transport-specific adapter
 behavior.
 """
 
-from unittest.mock import MagicMock
-
 import numpy as np
 from detector import (
     EMA_ALPHA,
@@ -79,7 +77,7 @@ def make_active_window(rng, amplitude=20.0):
 
 def test_detect_returns_no_and_has_activity_false_when_inactive():
     rng = np.random.default_rng(0)
-    core = DetectionCore(db_conn=MagicMock())
+    core = DetectionCore()
 
     for _ in range(MIN_WINDOWS_BEFORE_GUARD + 2):
         pv, op = make_active_window(rng)
@@ -95,7 +93,7 @@ def test_detect_returns_no_and_has_activity_false_when_inactive():
 
 def test_detect_stays_active_for_consistent_amplitude():
     rng = np.random.default_rng(1)
-    core = DetectionCore(db_conn=MagicMock())
+    core = DetectionCore()
 
     for _ in range(MIN_WINDOWS_BEFORE_GUARD + 2):
         pv, op = make_active_window(rng)
@@ -107,13 +105,16 @@ def test_detect_stays_active_for_consistent_amplitude():
     assert result.has_activity is True
 
 
-def test_detect_persists_to_db():
-    rng = np.random.default_rng(2)
-    db_conn = MagicMock()
-    core = DetectionCore(db_conn=db_conn)
+def test_detect_runs_rf_model_regardless_of_activity_guard():
+    """RF wasn't trained with an activity guard (module docstring) -- it
+    should always run and return a well-formed prediction, active window or
+    not."""
+    rng = np.random.default_rng(3)
+    core = DetectionCore()
 
-    pv, op = make_active_window(rng)
-    core.detect(WindowInput("valve-1", list(pv), list(op), 12345))
+    pv_flat = rng.normal(50, 0.05, 100)
+    op_flat = rng.normal(50, 0.05, 100)
+    result = core.detect(WindowInput("valve-1", list(pv_flat), list(op_flat), 0))
 
-    db_conn.cursor.return_value.__enter__.return_value.execute.assert_called_once()
-    db_conn.commit.assert_called_once()
+    assert result.rf_label in ("yes", "no")
+    assert 0.0 <= result.rf_probability <= 1.0
