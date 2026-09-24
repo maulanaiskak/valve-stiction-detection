@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package detection;
 
-option go_package = "valve-stiction-pipeline/ingestion/detectionpb";
+option go_package = "github.com/maulanaiskak/valve-stiction-ingestion/delivery/grpc/detectionpb";
 
 // Mirrors valve_stiction_ml.classic.label_window's output directly --
 // see docs/V1_PLAN.md. No translation layer to keep in sync separately.
