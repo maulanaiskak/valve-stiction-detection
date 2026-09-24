@@ -14,6 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends git gcc libpq-d
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY detection/ .
+COPY . .
 
 CMD ["python", "main.py"]

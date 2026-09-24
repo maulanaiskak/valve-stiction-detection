@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package detection;
+
+option go_package = "valve-stiction-pipeline/ingestion/detectionpb";
+
+// Mirrors valve_stiction_ml.classic.label_window's output directly --
+// see docs/V1_PLAN.md. No translation layer to keep in sync separately.
+service Detection {
+  rpc DetectWindow(WindowRequest) returns (WindowResponse);
+}
+
+message WindowRequest {
+  string sensor_id = 1;
+  repeated double pv = 2;
+  repeated double op = 3;
+  int64 window_start_unix_ms = 4;
+}
+
+message WindowResponse {
+  string label = 1;         // "yes" | "no" | "uncertain" -- classic detector
+  double ellipse_index = 2;
+  bool kano_verdict = 3;
+  bool has_activity = 4;
+  string rf_label = 5;      // "yes" | "no" -- RF model (valve-stiction-ml)
+  double rf_probability = 6;
+}

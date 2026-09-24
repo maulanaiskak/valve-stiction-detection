@@ -1,0 +1,9 @@
+grpcio
+grpcio-tools
+protobuf
+psycopg2-binary
+confluent-kafka
+# classic.py and the trained RF model's inference code are reused directly
+# from valve-stiction-ml, not vendored/copied -- installed from its public
+# repo so this works the same in Docker builds as it does locally.
+valve-stiction-ml @ git+https://github.com/maulanaiskak/valve-stiction-ml.git
